@@ -4,7 +4,6 @@ import random
 import time
 
 pygame.init()
-
 screen = pygame.display.set_mode((1000, 650))
 
 font = pygame.font.Font('freesansbold.ttf', 60)
@@ -133,6 +132,8 @@ def playGame():
     opponent3 = [37, 550, 0, 0]
     receiver = [29, 100, 0, 0]
     receiver2 = [29, 550, 0, 0]
+    ol = [30, 325, 10]
+    formerOpponentDeltaX = -1/30
 
     route2 = [[35, 550, 6, 0], [60, 50, 25, -500]]
 
@@ -146,6 +147,7 @@ def playGame():
     stage = 0
     picked = False
     while True:
+
         if picked:
             return "INTERCEPTION"
         current = time.time()
@@ -182,6 +184,7 @@ def playGame():
                     thrown = True
                     pos = pygame.mouse.get_pos()
                     ballTarget = [pos[0], pos[1]]
+                    yardTarget = yardline + (ballTarget[0]-200)/20
                     if ballTarget[0] > ball[0]:
                         ball[2] = 1/5
                     else:
@@ -207,7 +210,8 @@ def playGame():
                 holdingBall = True
 
             if detectCatch(receiver2[0], receiver2[1], ball[0], ball[1]):
-                print("caught")
+
+
                 storage = copyList(player)
                 player = copyList(receiver2)
                 receiver2 = copyList(storage)
@@ -219,7 +223,7 @@ def playGame():
             if detectCatch(opponent3[0], opponent3[1], ball[0], ball[1]):
                 picked = True
 
-        if stage > 0:
+        if stage > 0 and not thrown:
             receiver[0] += 1/20
             if receiver2[0] < route2[0][0]:
                 receiver2[0] += 1/20
@@ -227,6 +231,26 @@ def playGame():
             elif receiver2[0] < route2[1][0]:
                 receiver2[0] += 1 / 20
                 receiver2[1] += (1 / (route2[1][2]*20))*route2[1][3]
+        elif stage > 0 and thrown:
+            if receiver[0] < yardTarget-0.2:
+                receiver[0] += 1/20
+            if receiver[0] > yardTarget-0.2:
+                receiver[0] -= 1/20
+            if receiver[1] < ballTarget[1]:
+                receiver[1] += 0.75
+            elif receiver[1] > ballTarget[1]:
+                receiver[1] += -0.75
+
+            if receiver2[0] < yardTarget-0.2:
+                receiver2[0] += 1/20
+            if receiver2[0] > yardTarget-0.2:
+                receiver2[0] -= 1/20
+            if receiver2[1] < ballTarget[1]:
+                receiver2[1] += 0.75
+            elif receiver2[1] > ballTarget[1]:
+                receiver2[1] += -0.75
+
+
 
         player[0] = float(format(player[0], ".4f"))
         if player[0] < -10:
@@ -255,7 +279,7 @@ def playGame():
                 #ready = input()
                 ball[0] += ball[2]
                 ball[1] += ball[3]
-                print(catchable)
+
                 if abs(ball[1] - ballTarget[1]) <= 80 and abs(20 * (ball[0] - thrownX) - (ballTarget[0]-200)) <= ball[2]*600:
                     catchable = True
             else:
@@ -270,6 +294,7 @@ def playGame():
             drawPlayerWithoutBall(yardline, player[0], player[1], (255, 120, 0))
         if stage > 0:
             drawBall(ball[0], ball[1])
+        drawPlayerWithoutBall(yardline, ol[0], ol[1], (255,120,0))
         drawPlayerWithoutBall(yardline, opponent[0], opponent[1], (0, 0, 0))
         drawPlayerWithoutBall(yardline, opponent2[0], opponent2[1], (0, 0, 0))
         drawPlayerWithoutBall(yardline, opponent3[0], opponent3[1], (0, 0, 0))
@@ -292,10 +317,20 @@ def playGame():
 
         if player[0] > opponent[0]:
             opponent[2] = 1/25
+        elif player[0] == opponent[0]:
+            opponent[2] = 0
         else:
             opponent[2] = -1/25
+
+        isCollidingWithOL = detectCollision(ol[0], ol[1], opponent[0], opponent[1])
+        if isCollidingWithOL:
+            formerOpponentDeltaX = opponent[2]
+            opponent[2] = opponent[2] / ol[2]
+
         if player[1] > opponent[1]:
             opponent[3] = 5
+        elif player[1] == opponent[1]:
+            opponent[3] = 0
         else:
             opponent[3] = -5
         if stage > 0:
@@ -305,10 +340,14 @@ def playGame():
         if thrown and holdingBall or (not thrown and scrimage):
             if player[0] > opponent2[0]:
                 opponent2[2] = 1 / 19
+            elif player[0] == opponent2[0]:
+                opponent2[2] = 0
             else:
                 opponent2[2] = -1 / 19
             if player[1] > opponent2[1]:
                 opponent2[3] = 5
+            elif player[1] == opponent2[1]:
+                opponent2[3] = 0
             else:
                 opponent2[3] = -5
             if stage > 0:
